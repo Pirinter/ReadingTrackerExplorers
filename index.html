@@ -1,5 +1,347 @@
-<!-- ... external resources ... -->
-    <!-- Firebase SDK Imports -->
+<!-- ... existing code ... -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClassBook Tracker - Student Reading Hub</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 min-h-screen flex flex-col justify-between">
+
+    <!-- Header Section -->
+    <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-30 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <input type="file" id="logo-file-input" class="hidden" accept="image/*" onchange="loadCustomLogo(event)">
+                <div id="logo-wrapper" class="relative" onclick="handleLogoClick()">
+                    <div id="logo-container" class="w-10 h-10 rounded-2xl bg-teal-600 flex items-center justify-center text-white shadow-md overflow-hidden transition">
+                        <svg id="logo-svg" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+                        <img id="logo-img" class="w-full h-full object-cover hidden" alt="Logo">
+                    </div>
+                </div>
+                <div>
+                    <h1 class="font-extrabold text-white text-base tracking-tight">ClassBook Tracker</h1>
+                    <p class="text-[11px] text-slate-400">Classroom Reading & Adventure Hub</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3">
+                <div id="role-badge" class="bg-teal-700/80 text-teal-100 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 border border-teal-500/30">
+                    <i class="fa-solid fa-user"></i>
+                    <span id="role-text">Viewer Mode</span>
+                </div>
+                <button onclick="toggleAdminMode()" class="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-sm">
+                    <i id="lock-icon" class="fa-solid fa-lock"></i>
+                    <span id="lock-text">Admin Login</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-4 py-6 w-full flex-grow grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- Left Column: Podium & Leaderboard -->
+        <div class="lg:col-span-1 flex flex-col gap-6">
+            <!-- Podium Card -->
+            <div class="bg-slate-900 rounded-3xl p-6 text-white shadow-xl border border-slate-800 relative overflow-hidden flex flex-col items-center">
+                <div class="absolute top-0 right-0 p-6 opacity-10 pointer-events-none">
+                    <i class="fa-solid fa-trophy text-8xl"></i>
+                </div>
+                <h3 class="font-extrabold text-base mb-1 text-slate-200 flex items-center gap-2">
+                    <i class="fa-solid fa-medal text-amber-400"></i> Top Readers Podium
+                </h3>
+                <p class="text-xs text-slate-400 mb-6 text-center">Our leading book explorers this term</p>
+                
+                <div id="podium-container" class="flex items-end justify-center w-full gap-3 pt-4 pb-2">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <!-- Leaderboard List -->
+            <div class="bg-slate-900 rounded-3xl p-6 text-white shadow-xl border border-slate-800 flex flex-col">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="font-extrabold text-base text-slate-200 flex items-center gap-2">
+                        <i class="fa-solid fa-ranking-star text-indigo-400"></i> Full Leaderboard
+                    </h3>
+                    <span id="student-count" class="text-xs font-bold text-indigo-300 bg-indigo-950/60 px-2.5 py-1 rounded-full border border-indigo-800/50">0 Students</span>
+                </div>
+                <div id="leaderboard-list" class="flex flex-col gap-2.5 max-h-[350px] overflow-y-auto pr-1">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Student Roster & Activity -->
+        <div class="lg:col-span-2 flex flex-col gap-6">
+            
+            <!-- Action Toolbar (Admin Only) -->
+            <div class="bg-white rounded-3xl p-5 shadow-sm border border-slate-100 flex flex-wrap items-center justify-between gap-4">
+                <div>
+                    <h2 class="font-bold text-slate-900 text-lg">Class Roster</h2>
+                    <p class="text-xs text-slate-400">Click on any student card to view reading logs & badges</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="openAddStudentModal()" class="admin-only hidden bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-user-plus"></i> Add Student
+                    </button>
+                    <button onclick="openLogBookModal()" class="admin-only hidden bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-4 py-2.5 rounded-xl transition flex items-center gap-2 shadow-sm">
+                        <i class="fa-solid fa-book-medical"></i> Log Book
+                    </button>
+                </div>
+            </div>
+
+            <!-- Students Grid -->
+            <div id="student-grid" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <!-- Populated dynamically -->
+            </div>
+
+            <!-- Recent Activity Section -->
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-100 flex flex-col gap-3">
+                <h3 class="font-bold text-slate-900 text-sm flex items-center gap-2">
+                    <i class="fa-solid fa-clock-rotate-left text-teal-600"></i> Recent Class Activity
+                </h3>
+                <div id="recent-activity-list" class="flex flex-col gap-2">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="bg-white border-t border-slate-100 py-4 text-center text-xs text-slate-400">
+        ClassBook Tracker &bull; Powered by Firebase Cloud Sync
+    </footer>
+
+    <!-- Modals & Dialogs -->
+    
+    <!-- Admin Passcode Modal -->
+    <div id="modal-admin-passcode" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100">
+            <h3 class="font-bold text-slate-900 text-lg mb-1">Admin Authentication</h3>
+            <p class="text-xs text-slate-400 mb-4">Enter passcode to access teacher controls.</p>
+            <form onsubmit="verifyAdminPasscode(event)" class="flex flex-col gap-4">
+                <input type="password" id="admin-passcode-input" placeholder="Passcode (default: admin123)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-600" required>
+                <div class="flex items-center justify-end gap-2">
+                    <button type="button" onclick="closeModals()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100">Cancel</button>
+                    <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-sm">Login</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Student Modal -->
+    <div id="modal-add-student" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <h3 class="font-bold text-slate-900 text-lg mb-1">Add New Student</h3>
+            <p class="text-xs text-slate-400 mb-4">Create a student explorer profile.</p>
+            <form onsubmit="handleAddStudent(event)" class="flex flex-col gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Student Name</label>
+                    <input type="text" id="student-name-input" placeholder="e.g. Alex Johnson" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-600" required>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-2">Avatar Style</label>
+                    <div class="flex gap-2 p-1 bg-slate-100 rounded-xl mb-3">
+                        <button type="button" id="btn-avatar-icon" onclick="setAvatarType('icon')" class="flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg bg-teal-600 text-white transition">Icon & Color</button>
+                        <button type="button" id="btn-avatar-image" onclick="setAvatarType('image')" class="flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Custom Photo</button>
+                    </div>
+
+                    <!-- Icon & Color Picker -->
+                    <div id="avatar-icon-section" class="flex flex-col gap-3">
+                        <div>
+                            <span class="text-[11px] text-slate-400 block mb-1">Choose Color</span>
+                            <div id="avatar-color-picker" class="flex items-center gap-2">
+                                <button type="button" onclick="selectColor('#0d9488', this)" data-color="#0d9488" class="w-7 h-7 rounded-full bg-teal-600 ring-2 ring-offset-2 ring-teal-600"></button>
+                                <button type="button" onclick="selectColor('#4f46e5', this)" data-color="#4f46e5" class="w-7 h-7 rounded-full bg-indigo-600"></button>
+                                <button type="button" onclick="selectColor('#db2777', this)" data-color="#db2777" class="w-7 h-7 rounded-full bg-pink-600"></button>
+                                <button type="button" onclick="selectColor('#d97706', this)" data-color="#d97706" class="w-7 h-7 rounded-full bg-amber-600"></button>
+                                <button type="button" onclick="selectColor('#7c3aed', this)" data-color="#7c3aed" class="w-7 h-7 rounded-full bg-purple-600"></button>
+                                <button type="button" onclick="selectColor('#0284c7', this)" data-color="#0284c7" class="w-7 h-7 rounded-full bg-sky-600"></button>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-[11px] text-slate-400 block mb-1">Choose Icon</span>
+                            <div id="avatar-icon-picker" class="grid grid-cols-6 gap-2">
+                                <button type="button" onclick="selectIcon('fa-user', this)" data-icon="fa-user" class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700 ring-2 ring-teal-600"><i class="fa-solid fa-user"></i></button>
+                                <button type="button" onclick="selectIcon('fa-star', this)" data-icon="fa-star" class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700"><i class="fa-solid fa-star"></i></button>
+                                <button type="button" onclick="selectIcon('fa-rocket', this)" data-icon="fa-rocket" class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700"><i class="fa-solid fa-rocket"></i></button>
+                                <button type="button" onclick="selectIcon('fa-dragon', this)" data-icon="fa-dragon" class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700"><i class="fa-solid fa-dragon"></i></button>
+                                <button type="button" onclick="selectIcon('fa-cat', this)" data-icon="fa-cat" class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700"><i class="fa-solid fa-cat"></i></button>
+                                <button type="button" onclick="selectIcon('fa-book', this)" data-icon="fa-book" class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700"><i class="fa-solid fa-book"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Image Upload Section -->
+                    <div id="avatar-image-section" class="hidden flex flex-col gap-2">
+                        <input type="file" accept="image/*" onchange="handleAvatarImageUpload(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100">
+                        <div id="avatar-preview-container" class="hidden mt-2 flex items-center gap-3">
+                            <img id="avatar-preview-img" class="w-12 h-12 rounded-xl object-cover border border-slate-200 shadow-sm" alt="Preview">
+                            <span class="text-xs text-slate-400">Photo selected successfully</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModals()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100">Cancel</button>
+                    <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-sm">Save Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Edit Student Modal -->
+    <div id="modal-edit-student" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <h3 class="font-bold text-slate-900 text-lg mb-1">Edit Student Profile</h3>
+            <p class="text-xs text-slate-400 mb-4">Update student name or avatar photo.</p>
+            <form onsubmit="handleEditStudent(event)" class="flex flex-col gap-4">
+                <input type="hidden" id="edit-student-id">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Student Name</label>
+                    <input type="text" id="edit-student-name-input" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-600" required>
+                </div>
+                
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-2">Avatar Style</label>
+                    <div class="flex gap-2 p-1 bg-slate-100 rounded-xl mb-3">
+                        <button type="button" id="btn-edit-avatar-icon" onclick="setEditAvatarType('icon')" class="flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg bg-teal-600 text-white transition">Icon & Color</button>
+                        <button type="button" id="btn-edit-avatar-image" onclick="setEditAvatarType('image')" class="flex-1 py-1.5 px-3 text-xs font-semibold rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 transition">Custom Photo</button>
+                    </div>
+
+                    <!-- Icon & Color Picker -->
+                    <div id="edit-avatar-icon-section" class="flex flex-col gap-3">
+                        <div>
+                            <span class="text-[11px] text-slate-400 block mb-1">Choose Color</span>
+                            <div id="edit-avatar-color-picker" class="flex items-center gap-2">
+                                <button type="button" onclick="selectEditColor('#0d9488', this)" data-color="#0d9488" class="w-7 h-7 rounded-full bg-teal-600"></button>
+                                <button type="button" onclick="selectEditColor('#4f46e5', this)" data-color="#4f46e5" class="w-7 h-7 rounded-full bg-indigo-600"></button>
+                                <button type="button" onclick="selectEditColor('#db2777', this)" data-color="#db2777" class="w-7 h-7 rounded-full bg-pink-600"></button>
+                                <button type="button" onclick="selectEditColor('#d97706', this)" data-color="#d97706" class="w-7 h-7 rounded-full bg-amber-600"></button>
+                                <button type="button" onclick="selectEditColor('#7c3aed', this)" data-color="#7c3aed" class="w-7 h-7 rounded-full bg-purple-600"></button>
+                                <button type="button" onclick="selectEditColor('#0284c7', this)" data-color="#0284c7" class="w-7 h-7 rounded-full bg-sky-600"></button>
+                            </div>
+                        </div>
+                        <div>
+                            <span class="text-[11px] text-slate-400 block mb-1">Choose Icon</span>
+                            <div id="edit-avatar-icon-picker" class="grid grid-cols-6 gap-2">
+                                <button type="button" onclick="selectEditIcon('fa-user', this)" data-icon="fa-user" class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700"><i class="fa-solid fa-user"></i></button>
+                                <button type="button" onclick="selectEditIcon('fa-star', this)" data-icon="fa-star" class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700"><i class="fa-solid fa-star"></i></button>
+                                <button type="button" onclick="selectEditIcon('fa-rocket', this)" data-icon="fa-rocket" class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700"><i class="fa-solid fa-rocket"></i></button>
+                                <button type="button" onclick="selectEditIcon('fa-dragon', this)" data-icon="fa-dragon" class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700"><i class="fa-solid fa-dragon"></i></button>
+                                <button type="button" onclick="selectEditIcon('fa-cat', this)" data-icon="fa-cat" class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700"><i class="fa-solid fa-cat"></i></button>
+                                <button type="button" onclick="selectEditIcon('fa-book', this)" data-icon="fa-book" class="p-2.5 rounded-xl bg-slate-50 border border-slate-200 hover:bg-slate-100 text-slate-700"><i class="fa-solid fa-book"></i></button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Image Upload Section -->
+                    <div id="edit-avatar-image-section" class="hidden flex flex-col gap-2">
+                        <input type="file" accept="image/*" onchange="handleEditAvatarImageUpload(event)" class="w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100">
+                        <div class="mt-2 flex items-center gap-3">
+                            <img id="edit-avatar-preview-img" class="w-12 h-12 rounded-xl object-cover border border-slate-200 shadow-sm" alt="Preview">
+                            <span class="text-xs text-slate-400">Current Photo / Upload New</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModals()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100">Cancel</button>
+                    <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-sm">Update Student</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Log Book Modal -->
+    <div id="modal-log-book" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto">
+            <h3 class="font-bold text-slate-900 text-lg mb-1">Log Completed Book</h3>
+            <p class="text-xs text-slate-400 mb-4">Record a finished book for a student.</p>
+            <form onsubmit="handleLogBook(event)" class="flex flex-col gap-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Select Student</label>
+                    <select id="log-student-select" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-600" required></select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Select Book</label>
+                    <select id="log-book-dropdown" onchange="handleBookSelectionChange(this)" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-600" required></select>
+                </div>
+                
+                <div id="custom-book-container" class="hidden flex flex-col gap-3 p-4 bg-slate-50 rounded-2xl border border-slate-200">
+                    <span class="text-xs font-bold text-teal-700">Add New Book to Library</span>
+                    <div>
+                        <label class="block text-[11px] text-slate-500 mb-1">Book Title</label>
+                        <input type="text" id="custom-book-title-input" placeholder="e.g. Mystery Mansion Adventure" class="w-full bg-white border border-slate-200 rounded-xl px-3 py-2 text-xs focus:outline-none focus:ring-2 focus:ring-teal-600">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Page Count</label>
+                    <input type="number" id="book-pages-input" min="1" max="2000" class="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-teal-600" required>
+                </div>
+
+                <div class="flex items-center justify-end gap-2 pt-2">
+                    <button type="button" onclick="closeModals()" class="px-4 py-2 rounded-xl text-xs font-semibold text-slate-500 hover:bg-slate-100">Cancel</button>
+                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs px-5 py-2.5 rounded-xl shadow-sm">Log Book</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Student History Modal -->
+    <div id="modal-student-history" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 max-h-[90vh] overflow-y-auto flex flex-col gap-4">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div id="history-modal-header" class="flex items-center gap-3">
+                    <!-- Populated dynamically -->
+                </div>
+                <button onclick="closeModals()" class="text-slate-400 hover:text-slate-700 text-lg p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div>
+                <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">Earned Badges</h4>
+                <div id="history-badges-container" class="flex flex-wrap gap-2">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <div class="flex-grow">
+                <h4 class="font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">Completed Books History</h4>
+                <div id="history-books-list" class="flex flex-col gap-2 max-h-[220px] overflow-y-auto pr-1">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between">
+                <span id="history-total-stats" class="text-xs font-bold text-slate-600">Total Books: 0 | Total Pages: 0</span>
+                <button onclick="closeModals()" class="bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs px-4 py-2 rounded-xl">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Alert Box -->
+    <div id="custom-alert" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center hidden p-4">
+        <div class="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl border border-slate-100 text-center flex flex-col items-center">
+            <div class="w-12 h-12 rounded-full bg-teal-50 text-teal-600 flex items-center justify-center text-xl mb-3">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <h3 id="alert-title" class="font-bold text-slate-900 text-base mb-1">Notification</h3>
+            <p id="alert-message" class="text-xs text-slate-500 mb-5">Action completed successfully.</p>
+            <button onclick="closeAlert()" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs py-3 rounded-xl shadow-sm">Got it</button>
+        </div>
+    </div>
+
+    <!-- Firebase SDK Imports & App Script -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getFirestore, doc, getDoc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
@@ -63,11 +405,9 @@
             });
         }
 
-        // Initialize Firestore directly without requiring Auth sign-in
         initFirestoreListener();
         console.log("Firebase Firestore connected successfully.");
 
-        // Global save function synced to Firestore with persistence confirmation
         window.saveDataToFirebase = async function() {
             if (isSyncing) return;
             isSyncing = true;
@@ -99,7 +439,6 @@
                     const imgObj = new Image();
                     imgObj.src = e.target.result;
                     imgObj.onload = function() {
-                        // Resize image to ensure it fits mobile network and storage limits effortlessly (max 150x150)
                         const canvas = document.createElement('canvas');
                         const MAX_WIDTH = 150;
                         const MAX_HEIGHT = 150;
@@ -127,9 +466,11 @@
 
                         const img = document.getElementById('logo-img');
                         const svg = document.getElementById('logo-svg');
-                        img.src = compressedDataUrl;
-                        img.classList.remove('hidden');
-                        svg.classList.add('hidden');
+                        if (img && svg) {
+                            img.src = compressedDataUrl;
+                            img.classList.remove('hidden');
+                            svg.classList.add('hidden');
+                        }
                         
                         localStorage.setItem('classbook_custom_logo', compressedDataUrl);
                         if (window.saveDataToFirebase) window.saveDataToFirebase();
@@ -157,7 +498,6 @@
             }
         }
 
-        // State variables
         let isAdmin = false;
         const ADMIN_PASSCODE = 'admin123';
 
@@ -171,7 +511,6 @@
         let editAvatarType = 'icon';
         let editAvatarDataUrl = '';
 
-        // Default library list with your books
         let classroomLibrary = [
             { title: "Sherlock Holmes The Hound Of The Baskervilles", pages: 180 },
             { title: "Sherlock Holmes The Devil's Foot", pages: 90 },
@@ -719,7 +1058,6 @@
 
             const sortedStudents = [...students].sort((a, b) => (b.booksRead || 0) - (a.booksRead || 0));
 
-            // Render 3D Podium for Top 3
             const podiumContainer = document.getElementById('podium-container');
             podiumContainer.innerHTML = '';
 
@@ -758,12 +1096,11 @@
                 podiumContainer.innerHTML = podiumHtml;
             }
 
-            // Render Leaderboard List
             const leaderboardList = document.getElementById('leaderboard-list');
             leaderboardList.innerHTML = '';
 
             if (sortedStudents.length === 0) {
-                leaderboardList.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">No rankings available yet. Add students to display the leaderboard.</p>`;
+                leaderboardList.innerHTML = `<p class="text-xs text-slate-400 text-center py-6">No rankings available yet.</p>`;
             } else {
                 sortedStudents.forEach((student, index) => {
                     const avatarHtml = renderStudentAvatar(student, "w-9 h-9 sm:w-10 sm:h-10", "text-sm");
@@ -792,12 +1129,11 @@
                 });
             }
 
-            // Render Students Grid
             const grid = document.getElementById('student-grid');
             grid.innerHTML = '';
 
             if (students.length === 0) {
-                grid.innerHTML = `<div class="col-span-2 text-center py-10 bg-white rounded-2xl border border-slate-100 text-slate-400">No students added yet. ${isAdmin ? 'Click "Add Student" to begin.' : ''}</div>`;
+                grid.innerHTML = `<div class="col-span-2 text-center py-10 bg-white rounded-2xl border border-slate-100 text-slate-400">No students added yet.</div>`;
             } else {
                 students.forEach(student => {
                     const card = document.createElement('div');
@@ -835,12 +1171,11 @@
                 });
             }
 
-            // Render Recent Activity
             const activityList = document.getElementById('recent-activity-list');
             activityList.innerHTML = '';
 
             if (recentLogs.length === 0) {
-                activityList.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">No books logged yet. Start reading!</p>`;
+                activityList.innerHTML = `<p class="text-xs text-slate-400 text-center py-4">No books logged yet.</p>`;
             } else {
                 recentLogs.forEach(log => {
                     const item = document.createElement('div');
