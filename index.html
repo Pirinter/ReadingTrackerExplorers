@@ -358,9 +358,9 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-        const appId = typeof __app_id !== 'undefined' ? __app_id : 'classbook_tracker_default';
-
-        const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'tracker_state');
+        
+        // Fixed Firestore path with even segments (collection / document / collection / document)
+        const docRef = doc(db, 'artifacts', 'classbook_tracker_data');
         let isSyncing = false;
 
         // Helper to setup real-time listener
@@ -370,7 +370,7 @@
                     const data = docSnap.data();
                     let updated = false;
                     
-                    if (data.students && Array.isArray(data.students) && data.students.length > 0) {
+                    if (data.students && Array.isArray(data.students)) {
                         students = data.students;
                         updated = true;
                     }
@@ -414,10 +414,10 @@
             try {
                 const customLogo = localStorage.getItem('classbook_custom_logo') || '';
                 await setDoc(docRef, {
-                    students,
-                    recentLogs,
-                    classroomLibrary,
-                    customLogo,
+                    students: students,
+                    recentLogs: recentLogs,
+                    classroomLibrary: classroomLibrary,
+                    customLogo: customLogo,
                     updatedAt: new Date().toISOString()
                 }, { merge: true });
                 console.log("Firebase sync: Data successfully saved to cloud.");
