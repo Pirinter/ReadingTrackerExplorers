@@ -359,8 +359,8 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         
-        // Fixed Firestore path with even segments (collection / document / collection / document)
-        const docRef = doc(db, 'artifacts', 'classbook_tracker_data');
+        // Correct Firestore path with exactly 4 segments (Collection / Document / Collection / Document)
+        const docRef = doc(db, 'artifacts', 'reading_tracker_explorers');
         let isSyncing = false;
 
         // Helper to setup real-time listener
